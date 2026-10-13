@@ -1,0 +1,29 @@
+# An example of the profiles file a deployment of the runner is started with
+# (AGENT_PROFILES or --profiles). A profile is a job description written by
+# whoever deploys the runner; a request can only choose one and fill in the
+# inputs and parameters it declares. See README.md.
+profiles:
+  summarize:
+    description: Summarize a text in one paragraph
+    model: claude-haiku-4-5-20251001
+    budget: 0.25 # USD; the session stops if it would spend more
+    timeout: 5m
+    output: summary.md # the one file the agent may write, and what the job returns
+    inputs: [text] # the request must supply these (written to inputs/<name>)
+    params: [language] # the request may supply these (plain words only)
+    reads: [] # folders a request may copy in with "refs"; none here
+    # permission_mode: acceptEdits is the default: the agent may write inside its
+    # (scratch) working folder and nowhere else. Path-scoped Write rules are not
+    # honored by headless Claude Code, so there is no Write(...) rule below.
+    allowed_tools: # Claude Code permission rules for what else it may use
+      - "Read"
+    denied_tools:
+      - "Read(**/.env)"
+      - "Read(**/.env.*)"
+    skills: [] # folders of instructions copied into .claude/skills/<name>/
+    system: |
+      You summarize text. Read the input file and write {{.Output}}.
+    prompt: |
+      Read {{index .Inputs "text"}} and write a one paragraph summary of it to
+      {{.Output}}, in {{index .Params "language"}}. Reply with one line saying
+      what you wrote.
