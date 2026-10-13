@@ -46,14 +46,42 @@ type Ref struct {
 	To   string `json:"to"`
 }
 
-// Result is what a job returns.
-type Result struct {
-	Output     string  `json:"output"` // the contents of the profile's output file
-	Notes      string  `json:"notes"`  // the agent's own closing remarks
-	Model      string  `json:"model"`
+// Usage is the tokens a session used, as Claude Code counted them. Cache reads
+// are the cheap part: a session that starts cold has few of them.
+type Usage struct {
+	InputTokens         int `json:"input_tokens"`
+	OutputTokens        int `json:"output_tokens"`
+	CacheReadTokens     int `json:"cache_read_tokens"`
+	CacheCreationTokens int `json:"cache_creation_tokens"`
+}
+
+// Spend is what a session cost. CostUSD is Claude Code's own estimate (tokens
+// times its price table), not a bill. It is reported for failed jobs too: they
+// spend tokens like any other.
+type Spend struct {
 	CostUSD    float64 `json:"cost_usd"`
 	Turns      int     `json:"turns"`
 	DurationMs int64   `json:"duration_ms"`
+	Usage      Usage   `json:"usage"`
+}
+
+// JobError is a job that failed after its session ran, and what the session
+// spent before failing. A job that never started a session (a refused request,
+// a timeout) is a plain error.
+type JobError struct {
+	Err   error
+	Spend Spend
+}
+
+func (e *JobError) Error() string { return e.Err.Error() }
+func (e *JobError) Unwrap() error { return e.Err }
+
+// Result is what a job returns.
+type Result struct {
+	Output string `json:"output"` // the contents of the profile's output file
+	Notes  string `json:"notes"`  // the agent's own closing remarks
+	Model  string `json:"model"`
+	Spend
 	// Denied lists tools the agent tried to use and was refused, which usually
 	// means the profile needs a rule added (or the agent was misled).
 	Denied []string `json:"denied,omitempty"`
@@ -148,6 +176,9 @@ func (r *Runner) Run(ctx context.Context, req Request) (*Result, error) {
 	defer cancel()
 	report, err := r.claude(ctx, work, p, prompt, system, allowed, denied)
 	if err != nil {
+		if report != nil {
+			err = &JobError{Err: err, Spend: report.spend()}
+		}
 		return nil, err
 	}
 
@@ -157,18 +188,16 @@ func (r *Runner) Run(ctx context.Context, req Request) (*Result, error) {
 		if d := report.denied(); len(d) > 0 {
 			msg += fmt.Sprintf(" (refused by the profile's permissions: %s)", strings.Join(d, "; "))
 		}
-		return nil, errors.New(msg)
+		return nil, &JobError{Err: errors.New(msg), Spend: report.spend()}
 	}
 	if len(out) > maxOutputBytes {
-		return nil, fmt.Errorf("%s is larger than %d bytes", p.Output, maxOutputBytes)
+		return nil, &JobError{Err: fmt.Errorf("%s is larger than %d bytes", p.Output, maxOutputBytes), Spend: report.spend()}
 	}
 	res := &Result{
-		Output:     string(out),
-		Notes:      tail(report.Result),
-		Model:      p.Model,
-		CostUSD:    report.CostUSD,
-		Turns:      report.Turns,
-		DurationMs: report.Millis,
+		Output: string(out),
+		Notes:  tail(report.Result),
+		Model:  p.Model,
+		Spend:  report.spend(),
 	}
 	res.Denied = report.denied()
 	return res, nil
@@ -329,10 +358,30 @@ type report struct {
 	CostUSD float64 `json:"total_cost_usd"`
 	Turns   int     `json:"num_turns"`
 	Millis  int64   `json:"duration_ms"`
+	Usage   struct {
+		Input         int `json:"input_tokens"`
+		Output        int `json:"output_tokens"`
+		CacheRead     int `json:"cache_read_input_tokens"`
+		CacheCreation int `json:"cache_creation_input_tokens"`
+	} `json:"usage"`
 	Denials []struct {
 		Tool  string          `json:"tool_name"`
 		Input json.RawMessage `json:"tool_input"`
 	} `json:"permission_denials"`
+}
+
+func (r *report) spend() Spend {
+	return Spend{
+		CostUSD:    r.CostUSD,
+		Turns:      r.Turns,
+		DurationMs: r.Millis,
+		Usage: Usage{
+			InputTokens:         r.Usage.Input,
+			OutputTokens:        r.Usage.Output,
+			CacheReadTokens:     r.Usage.CacheRead,
+			CacheCreationTokens: r.Usage.CacheCreation,
+		},
+	}
 }
 
 // denied describes the refused tool calls: which tool and what it was after.
@@ -391,7 +440,7 @@ func (r *Runner) claude(ctx context.Context, work string, p *profile.Profile, pr
 		return nil, fmt.Errorf("claude's output was not the expected JSON: %w", err)
 	}
 	if rep.IsError {
-		return nil, fmt.Errorf("the session ended with an error (%s): %s", rep.Subtype, tail(rep.Result))
+		return &rep, fmt.Errorf("the session ended with an error (%s): %s", rep.Subtype, tail(rep.Result))
 	}
 	return &rep, nil
 }

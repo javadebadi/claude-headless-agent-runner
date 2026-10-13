@@ -2,6 +2,7 @@ package job
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,11 +18,11 @@ const fakeClaude = `#!/bin/sh
 { echo "ARGS: $*"; echo "PWD: $(pwd)"; find . -type f | sort; } > "$FAKE_LOG"
 case "$FAKE_MODE" in
   nofile) ;;
-  error) echo '{"result":"out of budget","is_error":true,"subtype":"error_max_budget_usd"}'; exit 1 ;;
+  error) echo '{"result":"out of budget","is_error":true,"subtype":"error_max_budget_usd","total_cost_usd":2.0,"num_turns":30,"usage":{"input_tokens":5,"output_tokens":7}}'; exit 1 ;;
   slow) sleep 5 ;;
   *) echo "version: 1" > spec.yaml ;;
 esac
-echo '{"result":"done: 3 slides","is_error":false,"total_cost_usd":0.31,"num_turns":9,"duration_ms":1234,"permission_denials":[{"tool_name":"Bash","tool_input":{"command":"rm -rf /"}}]}'
+echo '{"result":"done: 3 slides","is_error":false,"total_cost_usd":0.31,"num_turns":9,"duration_ms":1234,"usage":{"input_tokens":10,"output_tokens":40,"cache_read_input_tokens":12420,"cache_creation_input_tokens":7735},"permission_denials":[{"tool_name":"Bash","tool_input":{"command":"rm -rf /"}}]}'
 `
 
 const profiles = `
@@ -115,6 +116,9 @@ func TestARunPreparesTheFolderRunsClaudeAndReturnsTheFile(t *testing.T) {
 	}
 	if res.Output != "version: 1\n" || res.Notes != "done: 3 slides" || res.CostUSD != 0.31 || res.Turns != 9 {
 		t.Errorf("unexpected result: %+v", res)
+	}
+	if want := (Usage{InputTokens: 10, OutputTokens: 40, CacheReadTokens: 12420, CacheCreationTokens: 7735}); res.Usage != want || res.DurationMs != 1234 {
+		t.Errorf("usage should be reported: %+v", res.Spend)
 	}
 	if len(res.Denied) != 1 || !strings.HasPrefix(res.Denied[0], "Bash ") || !strings.Contains(res.Denied[0], "rm -rf") {
 		t.Errorf("denials should be reported: %v", res.Denied)
@@ -216,6 +220,11 @@ func TestASessionThatEndsInAnErrorIsAnError(t *testing.T) {
 	_, err := e.runner.Run(context.Background(), e.request())
 	if err == nil || !strings.Contains(err.Error(), "out of budget") {
 		t.Fatalf("got %v", err)
+	}
+	// It spent what it spent, and the caller should hear of it.
+	var failed *JobError
+	if !errors.As(err, &failed) || failed.Spend.CostUSD != 2.0 || failed.Spend.Turns != 30 || failed.Spend.Usage.OutputTokens != 7 {
+		t.Errorf("a failed session should carry what it spent: %+v", err)
 	}
 }
 
