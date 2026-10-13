@@ -56,6 +56,15 @@ func New(runner *job.Runner) http.Handler {
 			// The caller went away or gave up; nobody is listening.
 			writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "cancelled"})
 		default:
+			// A session that ran and failed still spent tokens: say how many.
+			var failed *job.JobError
+			if errors.As(err, &failed) {
+				writeJSON(w, http.StatusBadGateway, struct {
+					Error string `json:"error"`
+					job.Spend
+				}{err.Error(), failed.Spend})
+				return
+			}
 			writeJSON(w, http.StatusBadGateway, map[string]string{"error": err.Error()})
 		}
 	})

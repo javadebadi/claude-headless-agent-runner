@@ -61,10 +61,13 @@ is refused rather than followed.
 
 - `POST /run` with `{"profile", "inputs": {name: text}, "refs": [{"from",
   "to"}], "params": {name: value}}` answers `{output, notes, model, cost_usd,
-  turns, duration_ms, denied}`. `denied` lists tool calls the profile refused,
+  turns, duration_ms, usage, denied}`. `usage` is the tokens the session used
+  (`input_tokens`, `output_tokens`, `cache_read_tokens`, `cache_creation_tokens`);
+  `cost_usd` is Claude Code's own estimate from them, not a bill. `denied` lists tool calls the profile refused,
   which usually means the profile needs a rule, or the agent was misled.
   Status: 400 the request is not allowed, 502 the job failed (the message says
-  why), 503 the caller gave up.
+  why; if a session ran, the body also carries `cost_usd`, `turns`,
+  `duration_ms` and `usage`, since a failed job spends tokens too), 503 the caller gave up.
 - `GET /profiles` lists the profiles and what they take (not their permissions).
 - `GET /health`.
 

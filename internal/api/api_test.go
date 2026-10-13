@@ -18,7 +18,7 @@ case "$FAKE_MODE" in
   nofile) ;;
   *) echo "hello" > out.txt ;;
 esac
-echo '{"result":"ok","is_error":false,"total_cost_usd":0.1,"num_turns":2,"duration_ms":5}'
+echo '{"result":"ok","is_error":false,"total_cost_usd":0.1,"num_turns":2,"duration_ms":5,"usage":{"input_tokens":3,"output_tokens":4}}'
 `
 
 func server(t *testing.T, mode string) http.Handler {
@@ -80,7 +80,7 @@ func TestRunAnswersWithTheResult(t *testing.T) {
 	}
 	var res job.Result
 	json.Unmarshal(rec.Body.Bytes(), &res)
-	if res.Output != "hello\n" || res.CostUSD != 0.1 || res.Turns != 2 {
+	if res.Output != "hello\n" || res.CostUSD != 0.1 || res.Turns != 2 || res.Usage.InputTokens != 3 || res.Usage.OutputTokens != 4 {
 		t.Errorf("unexpected result: %+v", res)
 	}
 }
@@ -103,5 +103,8 @@ func TestStatusCodesSayWhoseFaultItIs(t *testing.T) {
 	// A job that fails is a gateway problem, not a bad request.
 	if rec := post(server(t, "nofile"), "/run", `{"profile":"hello"}`); rec.Code != http.StatusBadGateway {
 		t.Errorf("a job that wrote nothing: status %d, want 502 (%s)", rec.Code, rec.Body)
+	} else if body := rec.Body.String(); !strings.Contains(body, `"error"`) || !strings.Contains(body, `"cost_usd":0.1`) || !strings.Contains(body, `"output_tokens":4`) {
+		// It ran, so it spent tokens: the failure says how many.
+		t.Errorf("a failed job should report what it spent: %s", body)
 	}
 }
