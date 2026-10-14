@@ -1,0 +1,35 @@
+# ROOT is replaced with this folder's absolute path by ../run.sh (profiles need
+# absolute paths).
+profiles:
+  book-to-carousel:
+    description: Turn a book into Instagram carousel posts
+    model: claude-sonnet-5-5
+    budget: 2.00
+    timeout: 15m
+    output_dir: posts
+    inputs: [brief]
+    params: [posts, slides_per_post, language]
+    reads: [ROOT/book]
+    allowed_tools:
+      - "Read"
+      - "Bash(sh .claude/skills/carousel-check/check.sh:*)"
+    skills:
+      - {name: carousel-check, from: ROOT/skills/carousel-check}
+    system: |
+      You write social media posts from books. Write only text files under
+      {{.Output}}/.
+    prompt: |
+      Read the book in book/ and the brief in {{index .Inputs "brief"}}.
+      Write {{index .Params "posts"}} posts in {{index .Params "language"}}, each
+      a carousel of {{index .Params "slides_per_post"}} slides:
+        {{.Output}}/NN/caption.md       the caption: a hook, a line per idea, a closing question
+        {{.Output}}/NN/slide-MM.md      the text on slide MM, at most 25 words
+        {{.Output}}/NN/image-MM.md      a prompt for the image of slide MM
+      NN counts posts and MM slides, both from 01. The first line of each image
+      prompt is "Illustrates slide-MM.md." and the rest describes a scene that
+      shows what that slide says. Use only ideas that are in the book.
+
+      Then run the checker (see the carousel-check skill):
+        sh .claude/skills/carousel-check/check.sh {{.Output}}
+      Fix everything it lists and run it again until it prints OK. Do not finish
+      before that. Reply with one line saying what you wrote.

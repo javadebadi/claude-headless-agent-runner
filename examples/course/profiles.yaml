@@ -1,0 +1,44 @@
+# ROOT is replaced with this folder's absolute path by run.sh (profiles need
+# absolute paths).
+profiles:
+  course:
+    description: Write a whole course in the format of a sample course
+    model: claude-sonnet-5-5
+    budget: 4.00
+    timeout: 30m
+    output_dir: course
+    inputs: [brief]
+    params: [slug, title, language, modules]
+    reads: [ROOT/sample]
+    allowed_tools:
+      - "Read"
+      - "Bash(sh .claude/skills/course-check/check.sh:*)"
+    skills:
+      - {name: course-check, from: ROOT/skills/course-check}
+    system: |
+      You write programming courses. You write only text files, all under
+      {{.Output}}/. You never write an "id:" field.
+    prompt: |
+      Write a new course, "{{index .Params "title"}}" (slug {{index .Params "slug"}}),
+      with {{index .Params "modules"}} modules, for the programming language
+      {{index .Params "language"}}. The brief is in {{index .Inputs "brief"}}.
+
+      First study the sample course in sample/ to learn the format: read its
+      course.yaml and every file of its module. Copy the structure exactly, but
+      write your own content; never copy the sample's text.
+
+      Write these files:
+        {{.Output}}/course.yaml
+        {{.Output}}/modules/NN-<module-slug>/module.yaml
+        {{.Output}}/modules/NN-<module-slug>/NN-lesson-<slug>.md
+        {{.Output}}/modules/NN-<module-slug>/NN-exercise-<slug>.md
+        {{.Output}}/modules/NN-<module-slug>/NN-quiz-<slug>.md
+      Each module has 2 or 3 lessons, an exercise after each lesson, and one quiz
+      at its end. Later lessons may use what earlier ones taught, and nothing
+      else. Set status: draft in course.yaml.
+
+      When everything is written, run the checker (see the course-check skill):
+        sh .claude/skills/course-check/check.sh {{.Output}}
+      Fix every problem it lists, in the file it names, and run it again until
+      it prints OK. Do not finish before that. Reply with one line saying what
+      you wrote and that the check passed.

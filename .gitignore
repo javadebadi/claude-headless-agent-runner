@@ -1,2 +1,8 @@
 bin/
 dist/
+docs/_site/
+docs/.jekyll-cache/
+docs/.sass-cache/
+docs/vendor/
+docs/Gemfile.lock
+docs/.bundle/

@@ -1,0 +1,8 @@
+{
+  "profile": "course",
+  "inputs": {
+    "brief": "An introductory Python course for complete beginners who have never programmed. Friendly and concrete; every lesson runs real code. Cover: first program and variables, input and output, if and loops, functions. Keep it small: this is a pilot."
+  },
+  "refs": [{"from": "ROOT/sample", "to": "sample"}],
+  "params": {"slug": "introduction-to-python", "title": "Introduction to Python", "language": "Python", "modules": "3"}
+}

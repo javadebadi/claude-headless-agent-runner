@@ -1,0 +1,14 @@
+title: agent-runner
+description: Run Claude Code headless as a worker for hire, over HTTP.
+theme: just-the-docs
+url: https://javadebadi.github.io
+baseurl: /claude-headless-agent-runner
+plugins:
+  - jekyll-relative-links
+relative_links:
+  enabled: true
+  collections: false
+# Pages that show Go template syntax ({{ ... }}) in code set render_with_liquid: false.
+aux_links:
+  "View on GitHub": "https://github.com/javadebadi/claude-headless-agent-runner"
+exclude: [Gemfile, Gemfile.lock, vendor]

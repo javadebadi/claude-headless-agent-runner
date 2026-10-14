@@ -1,0 +1,6 @@
+{
+  "profile": "book-to-carousel",
+  "inputs": {"brief": "Friendly tone. Each post is one idea a reader can use today."},
+  "refs": [{"from": "ROOT/book", "to": "book"}],
+  "params": {"posts": "3", "slides_per_post": "4", "language": "English"}
+}

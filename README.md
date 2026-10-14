@@ -1,5 +1,7 @@
 # agent-runner
 
+**New here? Read the [tutorial](https://javadebadi.github.io/claude-headless-agent-runner/).** This page is the reference.
+
 A small service that runs Claude Code headless as a worker for hire. You give
 it a **job**: which kind (a *profile*), some inputs, and folders to read. It
 prepares a scratch working folder, runs one Claude Code session there with only
@@ -204,8 +206,7 @@ Locally, if you are logged in to Claude Code, it uses that login.
 
 The image (`Dockerfile`) holds Claude Code (a pinned version: it changes often,
 and a silent update could change what a permission means), a headless Chrome and
-the runner. A deployment builds on it, adding its tools and its profiles file;
-see `content-to-carousel/Dockerfile.agent`.
+the runner. A deployment builds on it, adding its tools and its profiles file.
 
 ## What the permissions do and do not do (read this)
 
@@ -231,6 +232,8 @@ instruct it; keep what it can reach small enough that this does not matter.
 ## Layout
 
 ```
+docs/                   the tutorial, published at https://javadebadi.github.io/claude-headless-agent-runner/
+examples/               runnable examples: a course and an Instagram carousel
 cmd/agent-runner/       the server's entry point
 internal/profile/       the profiles file: parsing and validation
 internal/job/           preparing the folder, running Claude Code, confinement

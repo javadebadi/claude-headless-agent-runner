@@ -4,6 +4,15 @@ All notable changes to this project are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- A multi-page tutorial in `docs/`, published as a GitHub Pages site: a first job, inputs and folders, permissions,
+  skills and self-checks, folder output, deploying, and worked examples.
+- Runnable examples in `examples/` (a course, and Instagram carousel posts from a
+  book), each with a checker the agent runs on its own work, and `examples/run.sh`.
+
 ## [0.3.0] - 2026-10-13
 
 ### Added
