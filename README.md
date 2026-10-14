@@ -8,8 +8,7 @@ for it, a **folder of text files**) plus what the session cost.
 
 It knows nothing about what the jobs are for. Everything specific (what to
 read, which commands the agent may run, what to prompt) is in the profiles file
-of the deployment. Nothing here imports anything from the rest of the Knaph
-repository, so this folder can become a repository of its own.
+of the deployment.
 
 ## The idea in one picture
 

@@ -1,6 +1,6 @@
 # The generic agent runner: Claude Code, a browser and the runner binary. It
 # knows no particular job; a deployment adds its tools and its profiles file on
-# top (see content-to-carousel/Dockerfile.agent for the Knaph one).
+# top.
 #
 # The credential is not in the image: set CLAUDE_CODE_OAUTH_TOKEN (from
 # `claude setup-token`) or ANTHROPIC_API_KEY in the environment.

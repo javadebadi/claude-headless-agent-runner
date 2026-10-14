@@ -62,8 +62,8 @@ func setup(t *testing.T, mode string) *env {
 	skills := filepath.Join(dir, "skills")
 	outside := filepath.Join(dir, "secrets")
 	for path, content := range map[string]string{
-		filepath.Join(root, "knaph-book", "theme.yaml"):    "name: knaph-book\n",
-		filepath.Join(root, "knaph-book", "guide.md"):      "write like a book\n",
+		filepath.Join(root, "example-book", "theme.yaml"):    "name: example-book\n",
+		filepath.Join(root, "example-book", "guide.md"):      "write like a book\n",
 		filepath.Join(skills, "guide", "SKILL.md"):         "---\nname: guide\ndescription: x\n---\n\n# House rules\n\nBe exact.\n",
 		filepath.Join(skills, "guide", "notes", "more.md"): "more\n",
 		filepath.Join(skills, "extra", "SKILL.md"):         "---\nname: extra\n---\nextra\n",
@@ -97,8 +97,8 @@ func (e *env) request() Request {
 	return Request{
 		Profile: "spec",
 		Inputs:  map[string]string{"outline": "# The cell\n"},
-		Params:  map[string]string{"language": "fa", "theme": "knaph-book-fa"},
-		Refs:    []Ref{{From: filepath.Join(e.root, "knaph-book"), To: "themes/knaph-book"}},
+		Params:  map[string]string{"language": "fa", "theme": "example-book-fa"},
+		Refs:    []Ref{{From: filepath.Join(e.root, "example-book"), To: "themes/example-book"}},
 	}
 }
 
@@ -131,8 +131,8 @@ func TestARunPreparesTheFolderRunsClaudeAndReturnsTheFile(t *testing.T) {
 	for _, want := range []string{
 		// what the folder held when the session started
 		"./inputs/outline",
-		"./themes/knaph-book/theme.yaml",
-		"./themes/knaph-book/guide.md",
+		"./themes/example-book/theme.yaml",
+		"./themes/example-book/guide.md",
 		"./.claude/skills/guide/SKILL.md",
 		"./.claude/skills/guide/notes/more.md",
 		"./.claude/skills/extra/SKILL.md",
@@ -177,7 +177,7 @@ func TestTheRequestCanOnlyFillInWhatTheProfileDeclared(t *testing.T) {
 		"source outside the reads": func(r *Request) { r.Refs[0].From = e.outside },
 		"source with ..":           func(r *Request) { r.Refs[0].From = e.root + "/../secrets" },
 		"source through a symlink": func(r *Request) { r.Refs[0].From = link },
-		"relative source":          func(r *Request) { r.Refs[0].From = "themes/knaph-book" },
+		"relative source":          func(r *Request) { r.Refs[0].From = "themes/example-book" },
 		"missing source":           func(r *Request) { r.Refs[0].From = e.root + "/nope" },
 		"target outside":           func(r *Request) { r.Refs[0].To = "../escaped" },
 		"absolute target":          func(r *Request) { r.Refs[0].To = "/tmp/escaped" },
@@ -201,7 +201,7 @@ func TestTheRequestCanOnlyFillInWhatTheProfileDeclared(t *testing.T) {
 
 func TestAFolderWithASymlinkInsideIsRefusedNotFollowed(t *testing.T) {
 	e := setup(t, "ok")
-	if err := os.Symlink(e.outside, filepath.Join(e.root, "knaph-book", "link")); err != nil {
+	if err := os.Symlink(e.outside, filepath.Join(e.root, "example-book", "link")); err != nil {
 		t.Fatal(err)
 	}
 	_, err := e.runner.Run(context.Background(), e.request())
@@ -326,7 +326,7 @@ func TestARefCannotLandInTheOutputFolder(t *testing.T) {
 	for _, to := range []string{"pack", "pack/seed"} {
 		_, err := e.runner.Run(context.Background(), Request{
 			Profile: "pack",
-			Refs:    []Ref{{From: filepath.Join(e.root, "knaph-book"), To: to}},
+			Refs:    []Ref{{From: filepath.Join(e.root, "example-book"), To: to}},
 		})
 		if err == nil || !IsBadRequest(err) {
 			t.Errorf("%s: want a refused request, got %v", to, err)
