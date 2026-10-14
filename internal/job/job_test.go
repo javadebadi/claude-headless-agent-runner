@@ -62,8 +62,8 @@ func setup(t *testing.T, mode string) *env {
 	skills := filepath.Join(dir, "skills")
 	outside := filepath.Join(dir, "secrets")
 	for path, content := range map[string]string{
-		filepath.Join(root, "example-book", "theme.yaml"):    "name: example-book\n",
-		filepath.Join(root, "example-book", "guide.md"):      "write like a book\n",
+		filepath.Join(root, "example-book", "theme.yaml"):  "name: example-book\n",
+		filepath.Join(root, "example-book", "guide.md"):    "write like a book\n",
 		filepath.Join(skills, "guide", "SKILL.md"):         "---\nname: guide\ndescription: x\n---\n\n# House rules\n\nBe exact.\n",
 		filepath.Join(skills, "guide", "notes", "more.md"): "more\n",
 		filepath.Join(skills, "extra", "SKILL.md"):         "---\nname: extra\n---\nextra\n",
