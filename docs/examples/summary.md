@@ -1,4 +1,5 @@
 ---
+layout: default
 title: A summary
 render_with_liquid: false
 nav_order: 1

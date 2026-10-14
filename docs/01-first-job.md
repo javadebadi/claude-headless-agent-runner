@@ -1,4 +1,5 @@
 ---
+layout: default
 title: Your first job
 render_with_liquid: false
 nav_order: 2

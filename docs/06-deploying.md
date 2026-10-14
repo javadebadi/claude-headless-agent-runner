@@ -1,4 +1,5 @@
 ---
+layout: default
 title: Deploying it
 render_with_liquid: false
 nav_order: 7

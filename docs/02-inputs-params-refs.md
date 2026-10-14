@@ -1,4 +1,5 @@
 ---
+layout: default
 title: Inputs, parameters and folders
 render_with_liquid: false
 nav_order: 3

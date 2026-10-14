@@ -1,4 +1,5 @@
 ---
+layout: default
 title: Skills and self-checks
 render_with_liquid: false
 nav_order: 5

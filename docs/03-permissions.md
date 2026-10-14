@@ -1,4 +1,5 @@
 ---
+layout: default
 title: Permissions
 render_with_liquid: false
 nav_order: 4

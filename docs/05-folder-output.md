@@ -1,4 +1,5 @@
 ---
+layout: default
 title: Returning a folder of files
 render_with_liquid: false
 nav_order: 6

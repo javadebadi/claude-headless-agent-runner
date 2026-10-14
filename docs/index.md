@@ -1,4 +1,5 @@
 ---
+layout: default
 title: Tutorial
 render_with_liquid: false
 nav_order: 1

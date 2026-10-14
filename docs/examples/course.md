@@ -1,4 +1,5 @@
 ---
+layout: default
 title: A course in a given format
 render_with_liquid: false
 nav_order: 4

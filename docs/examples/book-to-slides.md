@@ -1,4 +1,5 @@
 ---
+layout: default
 title: Slides from a book
 render_with_liquid: false
 nav_order: 2

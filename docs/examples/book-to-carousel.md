@@ -1,4 +1,5 @@
 ---
+layout: default
 title: Instagram posts from a book
 render_with_liquid: false
 nav_order: 3
