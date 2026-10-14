@@ -27,3 +27,30 @@ profiles:
       Read {{index .Inputs "text"}} and write a one paragraph summary of it to
       {{.Output}}, in {{index .Params "language"}}. Reply with one line saying
       what you wrote.
+
+  # A profile that returns a folder of files instead of one file: output_dir in
+  # place of output. Use it when the files must agree with each other, so one
+  # session writes them all. The response carries them as "files".
+  book-to-pack:
+    description: Turn a markdown book into slides, pages and image prompts
+    model: claude-sonnet-5-5
+    budget: 2.00
+    timeout: 15m # keep the service's request timeout (Cloud Run) above this
+    output_dir: pack # the folder the agent fills; every file in it is returned
+    inputs: [brief]
+    params: [slides, pages, image_prompts]
+    reads: [/data/books] # a request copies the book in with "refs"
+    allowed_tools:
+      - "Read"
+    system: |
+      You turn books into teaching material. Write only text files, under
+      {{.Output}}/.
+    prompt: |
+      Read the book in book/ and the brief in {{index .Inputs "brief"}}. Write:
+        {{.Output}}/slides/01.md, 02.md, ...   {{index .Params "slides"}} slides
+        {{.Output}}/pages/01.md, 02.md, ...    {{index .Params "pages"}} pages
+        {{.Output}}/image-prompts/01.md, ...   {{index .Params "image_prompts"}} prompts
+      The first line of each image prompt names the page it illustrates, e.g.
+      "Illustrates pages/03.md.", and the prompt describes what that page says.
+      Keep slides, pages and prompts consistent with each other. Reply with one
+      line saying what you wrote.

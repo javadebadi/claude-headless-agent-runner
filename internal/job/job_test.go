@@ -20,6 +20,9 @@ case "$FAKE_MODE" in
   nofile) ;;
   error) echo '{"result":"out of budget","is_error":true,"subtype":"error_max_budget_usd","total_cost_usd":2.0,"num_turns":30,"usage":{"input_tokens":5,"output_tokens":7}}'; exit 1 ;;
   slow) sleep 5 ;;
+  dir) mkdir -p pack/slides pack/pages; echo "# one" > pack/slides/01.md; echo "page" > pack/pages/01.md ;;
+  dirlink) mkdir -p pack; ln -s /etc/hosts pack/leak.md ;;
+  dirbinary) mkdir -p pack; printf '\377\376' > pack/blob.bin ;;
   *) echo "version: 1" > spec.yaml ;;
 esac
 echo '{"result":"done: 3 slides","is_error":false,"total_cost_usd":0.31,"num_turns":9,"duration_ms":1234,"usage":{"input_tokens":10,"output_tokens":40,"cache_read_input_tokens":12420,"cache_creation_input_tokens":7735},"permission_denials":[{"tool_name":"Bash","tool_input":{"command":"rm -rf /"}}]}'
@@ -257,4 +260,76 @@ func TestJobsTakeTurns(t *testing.T) {
 		t.Fatalf("a second job should wait for the first and give up with its caller, got %v", err)
 	}
 	<-first
+}
+
+const dirProfile = `
+profiles:
+  pack:
+    description: test
+    model: claude-sonnet-5-5
+    timeout: 10s
+    output_dir: pack
+    reads: ["{{ROOT}}"]
+    allowed_tools: ["Read"]
+    prompt: "Fill {{.Output}}/."
+`
+
+func dirSetup(t *testing.T, mode string) *env {
+	t.Helper()
+	e := setup(t, mode)
+	set, err := profile.Parse([]byte(strings.Replace(dirProfile, "{{ROOT}}", e.root, 1)), "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.runner.Profiles = set
+	return e
+}
+
+func TestAProfileWithAnOutputFolderReturnsAllItsFiles(t *testing.T) {
+	e := dirSetup(t, "dir")
+	res, err := e.runner.Run(context.Background(), Request{Profile: "pack"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Output != "" || len(res.Files) != 2 || res.Files["slides/01.md"] != "# one\n" || res.Files["pages/01.md"] != "page\n" {
+		t.Errorf("unexpected files: %+v", res)
+	}
+	if log := e.called(t); !strings.Contains(log, "-p Fill pack/.") {
+		t.Errorf(".Output should be the folder:\n%s", log)
+	}
+}
+
+func TestAnOutputFolderThatIsEmptyOrMissingIsAnError(t *testing.T) {
+	e := dirSetup(t, "nofile")
+	_, err := e.runner.Run(context.Background(), Request{Profile: "pack"})
+	if err == nil || IsBadRequest(err) || !strings.Contains(err.Error(), "without writing pack/") {
+		t.Fatalf("got %v", err)
+	}
+	var failed *JobError
+	if !errors.As(err, &failed) {
+		t.Error("the failure should carry what the session spent")
+	}
+}
+
+func TestAnOutputFolderRefusesLinksAndBinaryFiles(t *testing.T) {
+	for mode, want := range map[string]string{"dirlink": "not a plain file", "dirbinary": "only text"} {
+		e := dirSetup(t, mode)
+		_, err := e.runner.Run(context.Background(), Request{Profile: "pack"})
+		if err == nil || IsBadRequest(err) || !strings.Contains(err.Error(), want) {
+			t.Errorf("%s: got %v", mode, err)
+		}
+	}
+}
+
+func TestARefCannotLandInTheOutputFolder(t *testing.T) {
+	e := dirSetup(t, "dir")
+	for _, to := range []string{"pack", "pack/seed"} {
+		_, err := e.runner.Run(context.Background(), Request{
+			Profile: "pack",
+			Refs:    []Ref{{From: filepath.Join(e.root, "knaph-book"), To: to}},
+		})
+		if err == nil || !IsBadRequest(err) {
+			t.Errorf("%s: want a refused request, got %v", to, err)
+		}
+	}
 }

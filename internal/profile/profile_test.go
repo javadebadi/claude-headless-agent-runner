@@ -60,12 +60,18 @@ func TestRefusesAProfileThatCouldBeMoreOpenThanMeant(t *testing.T) {
 		"no allowed tools": func(s string) string {
 			return strings.Replace(s, `allowed_tools: ["Read", "Write({{.Output}})"]`, "allowed_tools: []", 1)
 		},
-		"output with a folder":  func(s string) string { return strings.Replace(s, "output: spec.yaml", "output: ../spec.yaml", 1) },
-		"relative read root":    func(s string) string { return strings.Replace(s, "reads: [/themes]", "reads: [themes]", 1) },
-		"relative skill folder": func(s string) string { return strings.Replace(s, "from: /skills/guide", "from: skills/guide", 1) },
-		"empty prompt":          func(s string) string { return strings.Replace(s, "prompt: Write {{.Output}}", "prompt: ''", 1) },
-		"bad profile name":      func(s string) string { return strings.Replace(s, "  spec:", "  Spec Job:", 1) },
-		"bad param name":        func(s string) string { return strings.Replace(s, "params: [language]", "params: [Lang]", 1) },
+		"output and output_dir": func(s string) string {
+			return strings.Replace(s, "output: spec.yaml", "output: spec.yaml\n    output_dir: pack", 1)
+		},
+		"neither output nor output_dir": func(s string) string { return strings.Replace(s, "    output: spec.yaml\n", "", 1) },
+		"output_dir with a path":        func(s string) string { return strings.Replace(s, "output: spec.yaml", "output_dir: a/b", 1) },
+		"output_dir named inputs":       func(s string) string { return strings.Replace(s, "output: spec.yaml", "output_dir: inputs", 1) },
+		"output with a folder":          func(s string) string { return strings.Replace(s, "output: spec.yaml", "output: ../spec.yaml", 1) },
+		"relative read root":            func(s string) string { return strings.Replace(s, "reads: [/themes]", "reads: [themes]", 1) },
+		"relative skill folder":         func(s string) string { return strings.Replace(s, "from: /skills/guide", "from: skills/guide", 1) },
+		"empty prompt":                  func(s string) string { return strings.Replace(s, "prompt: Write {{.Output}}", "prompt: ''", 1) },
+		"bad profile name":              func(s string) string { return strings.Replace(s, "  spec:", "  Spec Job:", 1) },
+		"bad param name":                func(s string) string { return strings.Replace(s, "params: [language]", "params: [Lang]", 1) },
 		"bypassing permissions": func(s string) string {
 			return strings.Replace(s, "    output: spec.yaml", "    permission_mode: bypassPermissions\n    output: spec.yaml", 1)
 		},
@@ -78,5 +84,15 @@ func TestRefusesAProfileThatCouldBeMoreOpenThanMeant(t *testing.T) {
 	}
 	if _, err := Parse([]byte("profiles: {}"), "test"); err == nil {
 		t.Error("an empty file should be an error")
+	}
+}
+
+func TestAProfileMayReturnAFolderInsteadOfAFile(t *testing.T) {
+	set, err := Parse([]byte(strings.Replace(good, "output: spec.yaml", "output_dir: pack", 1)), "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p := set["spec"]; p.OutputDir != "pack" || p.Output != "" {
+		t.Errorf("output_dir not read: %+v", p)
 	}
 }

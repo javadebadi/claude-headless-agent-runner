@@ -3,8 +3,8 @@
 A small service that runs Claude Code headless as a worker for hire. You give
 it a **job**: which kind (a *profile*), some inputs, and folders to read. It
 prepares a scratch working folder, runs one Claude Code session there with only
-the permissions the profile allows, and hands back **one file** plus what the
-session cost.
+the permissions the profile allows, and hands back **one file** (or, if the profile asks
+for it, a **folder of text files**) plus what the session cost.
 
 It knows nothing about what the jobs are for. Everything specific (what to
 read, which commands the agent may run, what to prompt) is in the profiles file
@@ -40,7 +40,7 @@ that were never theirs to set.
 | the commands the agent may run | the parameters it declares (plain words only) |
 | the folders a request may copy from (`reads`) | which folders to copy, from inside `reads` |
 | the skills copied into every job | |
-| the one file the agent writes and the job returns | |
+| the one file (`output`) or folder (`output_dir`) the agent writes and the job returns | |
 
 A reference to a folder is resolved to its real path and must be inside one of
 the profile's `reads`. `..`, symlinks that leave the folder, absolute targets
@@ -68,11 +68,124 @@ is refused rather than followed.
   Status: 400 the request is not allowed, 502 the job failed (the message says
   why; if a session ran, the body also carries `cost_usd`, `turns`,
   `duration_ms` and `usage`, since a failed job spends tokens too), 503 the caller gave up.
+- A profile sets `output: name.ext` (the default: one file, returned as
+  `output`) or `output_dir: name` (a folder the agent fills, returned as
+  `files`, a map from each file's path inside the folder to its text). Use the
+  folder for work whose files must agree with each other, such as a course or a
+  slide deck with its pages and image prompts. A folder holds text files only
+  (a link or binary file fails the job), at most 500 files and 8 MiB, and a
+  request cannot copy a ref into it.
 - `GET /profiles` lists the profiles and what they take (not their permissions).
 - `GET /health`.
 
 Jobs run **one at a time**: a session is heavy and one job's files and browser
 must not be another's. Run it with a Cloud Run concurrency of 1.
+
+## Example: ten slides from a markdown book
+
+The deployment writes the profile once:
+
+```yaml
+profiles:
+  book-to-slides:
+    description: Turn a markdown book into a slide deck
+    model: claude-sonnet-5-5
+    budget: 1.00
+    timeout: 10m
+    output: slides.md                        # the one file returned: the whole deck
+    inputs: [brief]
+    params: [slide_count, audience]
+    reads: [/Users/me/Documents/books]       # folders a request may copy from
+    allowed_tools: ["Read"]
+    system: |
+      You turn books into slide decks. Write {{.Output}}.
+    prompt: |
+      Read the book in book/ and the brief in {{index .Inputs "brief"}}.
+      Write exactly {{index .Params "slide_count"}} slides for
+      {{index .Params "audience"}} to {{.Output}}. Separate slides with ---.
+      Each slide has a title and 3-5 bullets. Reply with one line.
+```
+
+A caller then sends:
+
+```
+curl -X POST localhost:8080/run -d '{
+  "profile": "book-to-slides",
+  "inputs": {"brief": "The main argument, one key idea per chapter, end with a summary."},
+  "refs":   [{"from": "/Users/me/Documents/books/my-book", "to": "book"}],
+  "params": {"slide_count": "10", "audience": "software engineers"}
+}'
+```
+
+and gets `{"output": "# Title\n- point\n---\n...", "notes": "...", "cost_usd": ...}`.
+Save `output` as `slides.md` (Marp renders it to PDF or PPTX).
+
+Things to know:
+
+- A ref's `from` must be an **absolute path to a folder** inside the profile's
+  `reads`. A single file cannot be referenced, so keep the book in a folder of
+  its own, or the whole surrounding folder is copied.
+- A job returns one file, unless the profile uses `output_dir` (above). Related
+  files that must agree (a course, with lessons) are best made in one job with
+  `output_dir`; the alternative is a series of single-file jobs the caller keeps
+  consistent, for instance by passing earlier output back in as `inputs`.
+- A request cannot add skills or permissions. Guidance a caller supplies comes
+  in as `inputs` or `refs`, which the agent reads as data.
+
+## Example: slides, pages and image prompts (a folder of files)
+
+Files that must agree with each other are best written in one session. The
+profile sets `output_dir` in place of `output` (the full profile is
+`book-to-pack` in `profiles.example.yaml`):
+
+```yaml
+book-to-pack:
+  model: claude-sonnet-5-5
+  budget: 2.00
+  timeout: 15m
+  output_dir: pack          # the folder the agent fills; all its files come back
+  inputs: [brief]
+  params: [slides, pages, image_prompts]
+  reads: [/data/books]
+  allowed_tools: ["Read"]
+  prompt: |
+    Read book/ and the brief. Write {{.Output}}/slides/NN.md,
+    {{.Output}}/pages/NN.md and {{.Output}}/image-prompts/NN.md ...
+```
+
+The request has the same shape as before:
+
+```
+curl -X POST localhost:8080/run -d '{
+  "profile": "book-to-pack",
+  "inputs": {"brief": "Teach the main ideas to beginners."},
+  "refs":   [{"from": "/data/books/my-book", "to": "book"}],
+  "params": {"slides": "10", "pages": "10", "image_prompts": "5"}
+}'
+```
+
+and the answer carries the folder as `files`, each path with its text:
+
+```json
+{
+  "files": {
+    "slides/01.md": "# Title\n- point",
+    "pages/01.md": "...",
+    "image-prompts/01.md": "Illustrates pages/03.md. A watercolor of ..."
+  },
+  "notes": "Wrote 10 slides, 10 pages, 5 image prompts",
+  "cost_usd": 1.1
+}
+```
+
+The runner stores nothing and returns no link or zip: the caller writes the
+files to disk, zips them, or uploads them to its own storage (for instance
+before sending each image prompt to an image model). The model usually follows
+the counts but can be off by one, so have the caller check them.
+
+On Cloud Run, set the service's request timeout above the profile's `timeout`
+(the default is 5 minutes, the profile's 15), concurrency to 1, and memory for
+the session plus whatever `refs` copies (the scratch folder is in memory).
 
 ## Running it
 

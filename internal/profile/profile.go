@@ -38,8 +38,8 @@ type Profile struct {
 	Budget      float64  `yaml:"budget"` // USD; the session stops if it would spend more
 	Timeout     Duration `yaml:"timeout"`
 
-	// System and Prompt are templates. Data available: .Output (the file the
-	// agent writes, relative to its working folder), .Inputs (input name ->
+	// System and Prompt are templates. Data available: .Output (the file or
+	// folder the agent writes, relative to its working folder), .Inputs (input name ->
 	// its path in the working folder), .Refs (the copied folders, as paths in
 	// the working folder) and .Params (the request's parameters).
 	System string `yaml:"system"`
@@ -74,7 +74,11 @@ type Profile struct {
 	Params []string `yaml:"params"`
 
 	// Output is the one file the agent may write, and what the job returns.
-	Output string `yaml:"output"`
+	// OutputDir is the alternative for work made of several related files: a
+	// folder the agent fills, all of whose files the job returns. A profile
+	// sets exactly one of them.
+	Output    string `yaml:"output"`
+	OutputDir string `yaml:"output_dir"`
 
 	MaxInputBytes int `yaml:"max_input_bytes"`
 }
@@ -114,6 +118,8 @@ const (
 //
 //	profiles:
 //	  spec: {description: ..., output: spec.yaml, ...}
+//
+// A profile returns one file (output) or a folder of files (output_dir).
 func Load(path string) (Set, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -157,8 +163,15 @@ func (p *Profile) validate() error {
 	if strings.TrimSpace(p.Prompt) == "" {
 		return errors.New("prompt is empty")
 	}
-	if !outputPattern.MatchString(p.Output) {
+	switch {
+	case p.Output != "" && p.OutputDir != "":
+		return errors.New("set output (one file) or output_dir (a folder of files), not both")
+	case p.Output == "" && p.OutputDir == "":
+		return errors.New("set output (the one file the job returns) or output_dir (a folder of files)")
+	case p.Output != "" && !outputPattern.MatchString(p.Output):
 		return errors.New("output must be one plain file name (the file the agent writes and the job returns)")
+	case p.OutputDir != "" && (!outputPattern.MatchString(p.OutputDir) || p.OutputDir == "inputs"):
+		return errors.New("output_dir must be one plain folder name, other than inputs")
 	}
 	if p.Budget < 0 {
 		return errors.New("budget is negative")

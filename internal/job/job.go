@@ -1,11 +1,12 @@
 // Package job runs one job of a profile: it prepares a fresh working folder
 // (the profile's skills, the request's inputs and the folders it asked to
 // copy), runs Claude Code headless there with only the permissions the
-// profile gives, and returns the one file the agent was asked to write.
+// profile gives, and returns the one file the agent was asked to write (or the
+// folder of files, for a profile with output_dir).
 //
 // It runs on Linux and macOS (a timed-out session's whole process group is
 // stopped). It knows nothing about what the jobs are for. Every job is: some inputs, a
-// prompt, a few folders to read, one file back.
+// prompt, a few folders to read, one file (or folder) back.
 package job
 
 import (
@@ -14,6 +15,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -22,6 +24,7 @@ import (
 	"syscall"
 	"text/template"
 	"time"
+	"unicode/utf8"
 
 	"github.com/javadebadi/claude-headless-agent-runner/internal/profile"
 )
@@ -78,9 +81,13 @@ func (e *JobError) Unwrap() error { return e.Err }
 
 // Result is what a job returns.
 type Result struct {
-	Output string `json:"output"` // the contents of the profile's output file
-	Notes  string `json:"notes"`  // the agent's own closing remarks
-	Model  string `json:"model"`
+	Output string `json:"output,omitempty"` // the contents of the profile's output file
+	// Files is the profile's output folder: each file's contents by its path
+	// inside the folder, with / separators. Set instead of Output when the
+	// profile has output_dir.
+	Files map[string]string `json:"files,omitempty"`
+	Notes string            `json:"notes"` // the agent's own closing remarks
+	Model string            `json:"model"`
 	Spend
 	// Denied lists tools the agent tried to use and was refused, which usually
 	// means the profile needs a rule added (or the agent was misled).
@@ -112,7 +119,12 @@ var (
 	inputName  = regexp.MustCompile(`^[a-z][a-z0-9_]{0,40}$`)
 )
 
-const maxOutputBytes = 1 << 20
+// Limits on what a job returns: one file, or a folder of files.
+const (
+	maxOutputBytes    = 1 << 20
+	maxOutputDirBytes = 8 << 20
+	maxOutputFiles    = 500
+)
 
 type templateData struct {
 	Output string
@@ -182,22 +194,13 @@ func (r *Runner) Run(ctx context.Context, req Request) (*Result, error) {
 		return nil, err
 	}
 
-	out, err := os.ReadFile(filepath.Join(work, p.Output))
-	if err != nil || len(bytes.TrimSpace(out)) == 0 {
-		msg := fmt.Sprintf("the agent finished without writing %s: %s", p.Output, tail(report.Result))
-		if d := report.denied(); len(d) > 0 {
-			msg += fmt.Sprintf(" (refused by the profile's permissions: %s)", strings.Join(d, "; "))
-		}
-		return nil, &JobError{Err: errors.New(msg), Spend: report.spend()}
-	}
-	if len(out) > maxOutputBytes {
-		return nil, &JobError{Err: fmt.Errorf("%s is larger than %d bytes", p.Output, maxOutputBytes), Spend: report.spend()}
-	}
 	res := &Result{
-		Output: string(out),
-		Notes:  tail(report.Result),
-		Model:  p.Model,
-		Spend:  report.spend(),
+		Notes: tail(report.Result),
+		Model: p.Model,
+		Spend: report.spend(),
+	}
+	if err := collect(work, p, report, res); err != nil {
+		return nil, err
 	}
 	res.Denied = report.denied()
 	return res, nil
@@ -244,7 +247,11 @@ func checkRequest(p *profile.Profile, req Request) error {
 
 // prepare builds the working folder and returns the template data.
 func (r *Runner) prepare(work string, p *profile.Profile, req Request) (*templateData, error) {
-	data := &templateData{Output: p.Output, Inputs: map[string]string{}, Params: req.Params}
+	output := p.Output
+	if p.OutputDir != "" {
+		output = p.OutputDir
+	}
+	data := &templateData{Output: output, Inputs: map[string]string{}, Params: req.Params}
 	if data.Params == nil {
 		data.Params = map[string]string{}
 	}
@@ -285,12 +292,85 @@ func (r *Runner) prepare(work string, p *profile.Profile, req Request) (*templat
 		if err != nil {
 			return nil, err
 		}
+		if p.OutputDir != "" && within(filepath.Join(work, p.OutputDir), dst) {
+			return nil, badRequestf("ref target %q may not be in the output folder", ref.To)
+		}
 		if err := c.copyTree(src, dst); err != nil {
 			return nil, err
 		}
 		data.Refs = append(data.Refs, filepath.Clean(ref.To))
 	}
+	if p.OutputDir != "" {
+		if err := os.MkdirAll(filepath.Join(work, p.OutputDir), 0o755); err != nil {
+			return nil, err
+		}
+	}
 	return data, nil
+}
+
+// collect reads what the agent wrote into res: the profile's one file, or all
+// the files of its output folder.
+func collect(work string, p *profile.Profile, report *report, res *Result) error {
+	fail := func(err error) error { return &JobError{Err: err, Spend: report.spend()} }
+	missing := func(what string) error {
+		msg := fmt.Sprintf("the agent finished without writing %s: %s", what, tail(report.Result))
+		if d := report.denied(); len(d) > 0 {
+			msg += fmt.Sprintf(" (refused by the profile's permissions: %s)", strings.Join(d, "; "))
+		}
+		return fail(errors.New(msg))
+	}
+
+	if p.OutputDir == "" {
+		out, err := os.ReadFile(filepath.Join(work, p.Output))
+		if err != nil || len(bytes.TrimSpace(out)) == 0 {
+			return missing(p.Output)
+		}
+		if len(out) > maxOutputBytes {
+			return fail(fmt.Errorf("%s is larger than %d bytes", p.Output, maxOutputBytes))
+		}
+		res.Output = string(out)
+		return nil
+	}
+
+	root := filepath.Join(work, p.OutputDir)
+	files := map[string]string{}
+	total := 0
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		switch {
+		case d.IsDir():
+			return nil
+		case !d.Type().IsRegular():
+			// A link could lead out of the working folder: refuse, don't follow.
+			return fmt.Errorf("%s is not a plain file", path[len(work)+1:])
+		}
+		rel, _ := filepath.Rel(root, path)
+		if len(files) >= maxOutputFiles {
+			return fmt.Errorf("more than %d files in %s", maxOutputFiles, p.OutputDir)
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if total += len(data); total > maxOutputDirBytes {
+			return fmt.Errorf("%s holds more than %d bytes", p.OutputDir, maxOutputDirBytes)
+		}
+		if !utf8.Valid(data) {
+			return fmt.Errorf("%s is not text; an output folder may hold only text files", filepath.ToSlash(rel))
+		}
+		files[filepath.ToSlash(rel)] = string(data)
+		return nil
+	})
+	if errors.Is(err, fs.ErrNotExist) || (err == nil && len(files) == 0) {
+		return missing(p.OutputDir + "/")
+	}
+	if err != nil {
+		return fail(err)
+	}
+	res.Files = files
+	return nil
 }
 
 func render(name, text string, data *templateData) (string, error) {
