@@ -32,6 +32,10 @@ Why it is shaped this way:
   to wander in.
 - **`Read` only.** It needs nothing else.
 
+- **A small model needs an explicit prompt.** Name the file and the tool ("open
+  it with the Read tool"). Haiku given just "Read inputs/text and summarize it"
+  sometimes replied that it saw no text and never opened the file.
+
 Adapting it: change the prompt and the output name. "Translate", "extract the
 action items", "rewrite for a child" and "classify" are all this profile with a
 different sentence.

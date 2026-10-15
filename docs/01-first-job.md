@@ -33,12 +33,21 @@ profiles:
     params: [language]    # the request may supply this
     allowed_tools: ["Read"]
     system: |
-      You summarize text. Write only {{.Output}}.
+      You summarize text. Use your tools to read the input file and to write the
+      output file.
     prompt: |
-      Read {{index .Inputs "text"}} and write a one paragraph summary of it to
-      {{.Output}}, in {{index .Params "language"}}. Reply with one line saying
-      what you wrote.
+      The text to summarize is in the file {{index .Inputs "text"}}. Open it with
+      the Read tool, then write a one paragraph summary of it to {{.Output}}, in
+      {{index .Params "language"}}. Reply with one line saying what you wrote.
 ```
+
+**Say plainly where the content is and which tool to use.** "Read inputs/text and
+write a summary" is clear to a person, but a small model such as Haiku sometimes
+answers "I don't see any text" without opening the file at all. The prompt above
+names the file and the tool, and that made it reliable in testing (4 of 4 runs,
+against 0 of 4 for the terse version). A larger model such as Sonnet coped with
+the terse one. Whatever model you pick, run a new profile a few times before you
+trust it.
 
 Notice what is fixed here and not up to the caller: the model, the spending
 limit, the time limit, what the agent may use, what file it must write. The
@@ -82,15 +91,14 @@ curl -X POST localhost:8080/run -d '{
   "cost_usd": 0.004,
   "turns": 3,
   "duration_ms": 6100,
-  "usage": {"input_tokens": 12, "output_tokens": 60, "cache_read_tokens": 0, "cache_creation_tokens": 0},
-  "denied": []
+  "usage": {"input_tokens": 12, "output_tokens": 60, "cache_read_tokens": 0, "cache_creation_tokens": 0}
 }
 ```
 
 - `output` is the content of the file the agent wrote.
 - `notes` is what the agent replied at the end (the prompt asked for one line).
 - `cost_usd` is Claude Code's own estimate, not a bill.
-- `denied` lists tool calls the profile refused. Empty is good; if it isn't,
+- `denied` appears only when the profile refused a tool call, so its absence is good; if it is there,
   [page 3](03-permissions.md) shows how to read it.
 
 (The numbers above are illustrative.)
