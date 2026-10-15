@@ -44,22 +44,22 @@ curl -X POST localhost:8080/run -d '{
 
 ### What came back
 
-A 502 (the job failed). The error below is what the agent said, shown before the runner added its own note (next section):
+A 502 (the job failed):
 
 ```json
 {
-  "error": "the agent finished without writing summary.md: I need to see what text you want me to summarize. Could you either:\n1. Provide the text directly in your message, or\n2. Point me to the file path where the input text is located\n\nOnce you provide that, I'll read it and write a one-paragraph summary to summary.md.",
-  "cost_usd": 0.0181695,
+  "error": "the agent finished without writing summary.md: I need to know what text to summarize. Could you provide:\n- A file path to read from (e.g., `inputs/text` or a specific document)\n- Or paste the text directly\n\nOnce you provide the input, I'll summarize it to `summary.md`. (the session ended after one turn without using any tool, so it never read the inputs or wrote the output: the prompt may be too vague for this model; name the input files and the tools to use, or try a larger model)",
+  "cost_usd": 0.018,
   "turns": 1,
-  "duration_ms": 3715,
-  "usage": {"input_tokens": 10, "output_tokens": 285, "cache_read_tokens": 12425, "cache_creation_tokens": 7746}
+  ...
 }
 ```
 
 ### How to read it
 
-The message sounds like your **request** is missing the text, but it isn't: the
-text was sent and the runner wrote it to `inputs/text`. Look at the other fields:
+The agent's words sound like your **request** is missing the text, but it isn't:
+the text was sent and the runner wrote it to `inputs/text`. The runner's note and
+the other fields say the same thing:
 
 - **`turns: 1`.** Opening a file and writing another takes at least three turns.
   One turn means the agent answered in plain text and **never called a tool**.
@@ -71,13 +71,10 @@ text was sent and the runner wrote it to `inputs/text`. Look at the other fields
 So the problem is the **prompt for this model**, not the request. A small model
 (here Haiku) given a terse instruction sometimes doesn't reach for its tools.
 
-The runner also says this in the error itself, by appending:
-
-```text
-(the session ended after one turn without using any tool, so it never read the
-inputs or wrote the output: the prompt may be too vague for this model; name the
-input files and the tools to use, or try a larger model)
-```
+The note at the end of `error` is the runner saying exactly this: one turn, no
+tool, so the prompt is the place to look. It is added whenever a job ends without
+its output after one turn and nothing was refused. Without it you would only see
+the agent's own words, which read like a problem with your request.
 
 ### The fix
 
