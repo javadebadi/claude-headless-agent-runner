@@ -44,7 +44,7 @@ curl -X POST localhost:8080/run -d '{
 
 ### What came back
 
-A 502 (the job failed):
+A 502 (the job failed). The error below is what the agent said, shown before the runner added its own note (next section):
 
 ```json
 {
@@ -71,16 +71,13 @@ text was sent and the runner wrote it to `inputs/text`. Look at the other fields
 So the problem is the **prompt for this model**, not the request. A small model
 (here Haiku) given a terse instruction sometimes doesn't reach for its tools.
 
-Recent versions of the runner say this in the error itself, by appending:
+The runner also says this in the error itself, by appending:
 
 ```text
 (the session ended after one turn without using any tool, so it never read the
 inputs or wrote the output: the prompt may be too vague for this model; name the
 input files and the tools to use, or try a larger model)
 ```
-
-If your error has no such note, you are on an older runner: use the `turns`
-reading above.
 
 ### The fix
 
