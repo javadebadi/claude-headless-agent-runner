@@ -4,15 +4,23 @@ All notable changes to this project are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.3.1] - 2026-10-14
+
+### Changed
+
+- When a job ends without its output after one turn and nothing was refused, the
+  error now says the agent used no tool and the prompt may be too vague for the
+  model. The agent's own reply ("I need to see the text") reads like a bad
+  request, but the session never opened the inputs.
+- The example `summarize` profile names the input file and the Read tool in its
+  prompt: a small model (Haiku) given the terse wording sometimes answered
+  without opening the file.
 
 ### Added
 
-- When a job ends without its output after one turn and no refusal, the error
-  now says the agent used no tool and the prompt may be too vague for the model
-  (the agent's own reply, "I need to see the text", reads like a bad request).
-- A multi-page tutorial in `docs/`, published as a GitHub Pages site: a first job, inputs and folders, permissions,
-  skills and self-checks, folder output, deploying, and worked examples.
+- A multi-page tutorial in `docs/`, published as a GitHub Pages site: a first job,
+  troubleshooting, inputs and folders, permissions, skills and self-checks, folder
+  output, deploying, and worked examples.
 - Runnable examples in `examples/` (a course, and Instagram carousel posts from a
   book), each with a checker the agent runs on its own work, and `examples/run.sh`.
 
@@ -50,6 +58,7 @@ All notable changes to this project are listed here. The format follows
 - First release: `POST /run`, `GET /profiles` and `GET /health`; profiles with
   skills, inputs, params and read-only folder refs; one file back per job.
 
+[0.3.1]: https://github.com/javadebadi/claude-headless-agent-runner/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/javadebadi/claude-headless-agent-runner/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/javadebadi/claude-headless-agent-runner/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/javadebadi/claude-headless-agent-runner/releases/tag/v0.1.0
