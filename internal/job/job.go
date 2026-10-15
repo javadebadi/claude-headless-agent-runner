@@ -316,6 +316,12 @@ func collect(work string, p *profile.Profile, report *report, res *Result) error
 		msg := fmt.Sprintf("the agent finished without writing %s: %s", what, tail(report.Result))
 		if d := report.denied(); len(d) > 0 {
 			msg += fmt.Sprintf(" (refused by the profile's permissions: %s)", strings.Join(d, "; "))
+		} else if report.Turns <= 1 {
+			// Reading the inputs and writing the output take at least a few turns, so
+			// one turn means the agent answered in text and used no tool. Its reply
+			// then reads like a problem with the request; say where it really lies.
+			msg += " (the session ended after one turn without using any tool, so it never read the inputs or wrote the output: " +
+				"the prompt may be too vague for this model; name the input files and the tools to use, or try a larger model)"
 		}
 		return fail(errors.New(msg))
 	}

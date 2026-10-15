@@ -19,6 +19,7 @@ const fakeClaude = `#!/bin/sh
 case "$FAKE_MODE" in
   nofile) ;;
   error) echo '{"result":"out of budget","is_error":true,"subtype":"error_max_budget_usd","total_cost_usd":2.0,"num_turns":30,"usage":{"input_tokens":5,"output_tokens":7}}'; exit 1 ;;
+  idle) echo '{"result":"I need the text. Could you paste it?","is_error":false,"total_cost_usd":0.02,"num_turns":1,"usage":{"input_tokens":9,"output_tokens":200}}'; exit 0 ;;
   slow) sleep 5 ;;
   dir) mkdir -p pack/slides pack/pages; echo "# one" > pack/slides/01.md; echo "page" > pack/pages/01.md ;;
   dirlink) mkdir -p pack; ln -s /etc/hosts pack/leak.md ;;
@@ -215,6 +216,26 @@ func TestAnAgentThatWritesNothingIsAnError(t *testing.T) {
 	_, err := e.runner.Run(context.Background(), e.request())
 	if err == nil || IsBadRequest(err) || !strings.Contains(err.Error(), "without writing spec.yaml") {
 		t.Fatalf("got %v", err)
+	}
+}
+
+func TestAnAgentThatUsedNoToolSaysSo(t *testing.T) {
+	const hint = "without using any tool"
+	// One turn and nothing refused: the agent only answered in text.
+	e := setup(t, "idle")
+	_, err := e.runner.Run(context.Background(), e.request())
+	if err == nil || !strings.Contains(err.Error(), "without writing spec.yaml") || !strings.Contains(err.Error(), hint) {
+		t.Fatalf("want the missing file with the no-tool hint, got %v", err)
+	}
+	var je *JobError
+	if !errors.As(err, &je) || je.Spend.Turns != 1 {
+		t.Errorf("the spend of the session should still be reported, got %v", err)
+	}
+	// Many turns and a refusal: the hint would mislead, so it is not given.
+	e = setup(t, "nofile")
+	_, err = e.runner.Run(context.Background(), e.request())
+	if err == nil || strings.Contains(err.Error(), hint) {
+		t.Errorf("no hint expected when the session did work, got %v", err)
 	}
 }
 

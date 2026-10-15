@@ -8,6 +8,9 @@ All notable changes to this project are listed here. The format follows
 
 ### Added
 
+- When a job ends without its output after one turn and no refusal, the error
+  now says the agent used no tool and the prompt may be too vague for the model
+  (the agent's own reply, "I need to see the text", reads like a bad request).
 - A multi-page tutorial in `docs/`, published as a GitHub Pages site: a first job, inputs and folders, permissions,
   skills and self-checks, folder output, deploying, and worked examples.
 - Runnable examples in `examples/` (a course, and Instagram carousel posts from a

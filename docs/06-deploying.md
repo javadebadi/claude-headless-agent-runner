@@ -63,4 +63,4 @@ sandbox is the deployment. A service that turns books into posts holds one
 credential and nothing else; a service that can touch a repository is a different
 service, with different callers.
 
-Back to the [index](README.md).
+Next: [Troubleshooting](07-troubleshooting.md).

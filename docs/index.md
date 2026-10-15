@@ -28,6 +28,7 @@ previous job.
 | 4 | [Skills and self-checks](04-skills-and-checks.md) | give the agent instructions and a script to check its own work |
 | 5 | [Returning a folder of files](05-folder-output.md) | `output_dir`, for work whose files must agree |
 | 6 | [Deploying it](06-deploying.md) | the image, credentials, Cloud Run settings |
+| 7 | [Troubleshooting](07-troubleshooting.md) | real failures, how to read them, how to fix them |
 
 ## Worked examples
 
