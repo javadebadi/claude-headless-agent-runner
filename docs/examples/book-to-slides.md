@@ -9,7 +9,7 @@ parent: Worked examples
 # Example: slides from a book
 
 A folder to read (the book) and a text brief, one file out. The profile, request
-and answer are in [page 2](../02-inputs-params-refs.md#an-example-slides-from-a-book);
+and answer are in [page 3](../03-inputs-params-refs.md#an-example-slides-from-a-book);
 here are the choices behind them.
 
 - **The book is a ref, not an input.** A book is many files and too large to paste
@@ -27,7 +27,7 @@ Things worth knowing:
   the only place it learns the folder's name.
 - "Write exactly N slides" is followed most of the time and missed sometimes.
   Count `---` in the caller, or in a checker the agent runs
-  ([page 4](../04-skills-and-checks.md)).
+  ([page 5](../05-skills-and-checks.md)).
 - If you also want speaker notes or images that match the slides, you have
   crossed into files that must agree: use a folder.
   [Instagram posts from a book](book-to-carousel.md) does that.

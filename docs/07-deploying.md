@@ -2,10 +2,10 @@
 layout: default
 title: Deploying it
 render_with_liquid: false
-nav_order: 7
+nav_order: 8
 ---
 
-# 6. Deploying it
+# 7. Deploying it
 
 ## The image
 
@@ -58,9 +58,11 @@ From a secret store, as an environment variable. The runner doesn't read or log 
 
 ## One deployment per kind of work
 
-Permissions are a guard rail, not a sandbox ([page 3](03-permissions.md)). The
+Permissions are a guard rail, not a sandbox ([page 4](04-permissions.md)). The
 sandbox is the deployment. A service that turns books into posts holds one
 credential and nothing else; a service that can touch a repository is a different
 service, with different callers.
 
-Next: [Troubleshooting](07-troubleshooting.md).
+That is the end of the walkthrough. The [worked examples](examples/) put the pieces
+together, and the [README](https://github.com/javadebadi/claude-headless-agent-runner#readme)
+is the reference.

@@ -2,10 +2,10 @@
 layout: default
 title: Inputs, parameters and folders
 render_with_liquid: false
-nav_order: 3
+nav_order: 4
 ---
 
-# 2. Inputs, parameters and folders
+# 3. Inputs, parameters and folders
 
 A job has three ways to receive what it works on. Each exists for a reason.
 
@@ -82,4 +82,4 @@ The full walkthrough is in [Slides from a book](examples/book-to-slides.md).
 It can't add skills, tools or permissions. If a caller has guidance for the job,
 it arrives as an input or a ref, and the agent reads it as data.
 
-Next: [Permissions](03-permissions.md).
+Next: [Permissions](04-permissions.md).

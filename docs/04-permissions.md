@@ -2,10 +2,10 @@
 layout: default
 title: Permissions
 render_with_liquid: false
-nav_order: 4
+nav_order: 5
 ---
 
-# 3. Permissions
+# 4. Permissions
 
 An agent that can read and write files and run commands is useful, and it
 needs limits. This page says exactly what the profile controls, checked against
@@ -75,4 +75,4 @@ allowed_tools:
 
 Not `Bash(sh:*)` or `Bash`.
 
-Next: [Skills and self-checks](04-skills-and-checks.md).
+Next: [Skills and self-checks](05-skills-and-checks.md).

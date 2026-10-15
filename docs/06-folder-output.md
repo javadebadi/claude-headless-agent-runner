@@ -2,10 +2,10 @@
 layout: default
 title: Returning a folder of files
 render_with_liquid: false
-nav_order: 6
+nav_order: 7
 ---
 
-# 5. Returning a folder of files
+# 6. Returning a folder of files
 
 So far a job returned one file (`output`). Some work is many files that have to
 agree with each other: slides and the pages they refer to, captions and the image
@@ -68,7 +68,7 @@ the session's cost.
 
 The model usually produces the number you ask for and is sometimes off by one.
 Either have the caller check the counts, or, better, put the count in a checker
-([page 4](04-skills-and-checks.md)) so the agent corrects itself.
+([page 5](05-skills-and-checks.md)) so the agent corrects itself.
 
 ## One session or several?
 
@@ -76,4 +76,4 @@ Many files that depend on each other: one job with `output_dir`. Many
 independent files: one job each. If you need a series of jobs to stay consistent,
 pass the earlier result into the next as an `input`.
 
-Next: [Deploying it](06-deploying.md).
+Next: [Deploying it](07-deploying.md).

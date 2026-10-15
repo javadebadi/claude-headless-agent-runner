@@ -99,7 +99,7 @@ curl -X POST localhost:8080/run -d '{
 - `notes` is what the agent replied at the end (the prompt asked for one line).
 - `cost_usd` is Claude Code's own estimate, not a bill.
 - `denied` appears only when the profile refused a tool call, so its absence is good; if it is there,
-  [page 3](03-permissions.md) shows how to read it.
+  [page 4](04-permissions.md) shows how to read it.
 
 (The numbers above are illustrative.)
 
@@ -111,7 +111,13 @@ curl -X POST localhost:8080/run -d '{
 | 502 | the job failed. The message says why. If a session ran, the body still has `cost_usd` and `usage`: a failed job spends tokens too. |
 | 503 | the caller gave up (disconnected) |
 
+A 502 whose message sounds like the agent is asking you a question ("I need to see
+the text...") is covered in [Troubleshooting](02-troubleshooting.md).
+
 Jobs run **one at a time**, because each has its own files and a session is
 heavy. A second request waits for the first.
 
-Next: [Inputs, parameters and folders](02-inputs-params-refs.md).
+If your job failed, or the answer isn't what you expected, the next page walks
+through a real failure and how to read it.
+
+Next: [Troubleshooting](02-troubleshooting.md).

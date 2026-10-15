@@ -2,10 +2,10 @@
 layout: default
 title: Skills and self-checks
 render_with_liquid: false
-nav_order: 5
+nav_order: 6
 ---
 
-# 4. Skills and self-checks
+# 5. Skills and self-checks
 
 A prompt says what to do. A **skill** says how, and can carry files with it. A
 skill is a folder:
@@ -60,4 +60,4 @@ Two cautions:
 A complete one is [`examples/course/skills/course-check`](https://github.com/javadebadi/claude-headless-agent-runner/tree/main/examples/course/skills/course-check),
 explained in [A course in a given format](examples/course.md).
 
-Next: [Returning a folder of files](05-folder-output.md).
+Next: [Returning a folder of files](06-folder-output.md).

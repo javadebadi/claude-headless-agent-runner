@@ -23,12 +23,12 @@ previous job.
 | | Page | You learn |
 |---|---|---|
 | 1 | [Your first job](01-first-job.md) | build it, write a profile, call it, read the answer |
-| 2 | [Inputs, parameters and folders](02-inputs-params-refs.md) | how a request feeds a job: texts, plain words, folders to read |
-| 3 | [Permissions](03-permissions.md) | what the agent may do, and what that does and doesn't protect |
-| 4 | [Skills and self-checks](04-skills-and-checks.md) | give the agent instructions and a script to check its own work |
-| 5 | [Returning a folder of files](05-folder-output.md) | `output_dir`, for work whose files must agree |
-| 6 | [Deploying it](06-deploying.md) | the image, credentials, Cloud Run settings |
-| 7 | [Troubleshooting](07-troubleshooting.md) | real failures, how to read them, how to fix them |
+| 2 | [Troubleshooting](02-troubleshooting.md) | a real failure, how to read it, how to fix it |
+| 3 | [Inputs, parameters and folders](03-inputs-params-refs.md) | how a request feeds a job: texts, plain words, folders to read |
+| 4 | [Permissions](04-permissions.md) | what the agent may do, and what that does and doesn't protect |
+| 5 | [Skills and self-checks](05-skills-and-checks.md) | give the agent instructions and a script to check its own work |
+| 6 | [Returning a folder of files](06-folder-output.md) | `output_dir`, for work whose files must agree |
+| 7 | [Deploying it](07-deploying.md) | the image, credentials, Cloud Run settings |
 
 ## Worked examples
 

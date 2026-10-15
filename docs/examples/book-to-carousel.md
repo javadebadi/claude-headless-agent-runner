@@ -76,4 +76,4 @@ credentials for image models and social accounts out of the container.
 - **"Only ideas that are in the book"** and the brief's tone are where a human
   would check. The checker proves the shape, not that the book says it.
 - **No social credentials in the service.** Publishing is another system with
-  other permissions ([page 6](../06-deploying.md)).
+  other permissions ([page 7](../07-deploying.md)).

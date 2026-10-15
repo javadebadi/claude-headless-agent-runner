@@ -30,7 +30,7 @@ examples/course/
   text. Showing a finished example is more reliable than describing a format.
 - **The checker is a skill.** `check.sh` knows the format's rules: numbered
   modules, a title in every file, a quiz last, `status: draft`. The prompt makes
-  passing it the exit condition ([page 4](../04-skills-and-checks.md)).
+  passing it the exit condition ([page 5](../05-skills-and-checks.md)).
 - **Only one command is allowed** besides reading: the checker, by exact path.
 - **The output is a folder** (`output_dir: course`), because lessons, exercises
   and quizzes must be consistent.

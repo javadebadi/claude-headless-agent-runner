@@ -2,10 +2,10 @@
 layout: default
 title: Troubleshooting
 render_with_liquid: false
-nav_order: 8
+nav_order: 3
 ---
 
-# 7. Troubleshooting
+# 2. Troubleshooting
 
 Each entry shows what you did, what came back, how to read it, and the fix. They
 are real: the first one happened while writing this tutorial.
@@ -65,7 +65,7 @@ text was sent and the runner wrote it to `inputs/text`. Look at the other fields
   One turn means the agent answered in plain text and **never called a tool**.
   It didn't open `inputs/text`, so from its point of view there was no text.
 - **No `denied`.** Nothing was refused, so this is not a permissions problem
-  ([page 3](03-permissions.md)).
+  ([page 4](04-permissions.md)).
 - **It still cost money** (`cost_usd`): a failed job spends tokens too.
 
 So the problem is the **prompt for this model**, not the request. A small model
@@ -105,3 +105,5 @@ worked 4 of 4. Sonnet worked with either, so switching `model` to
 Run a new profile several times with the model you will use before you rely on
 it, and look at `turns` in the answers. A successful job that reads a file and
 writes one takes three or more.
+
+Next: [Inputs, parameters and folders](03-inputs-params-refs.md).
